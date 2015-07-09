@@ -15,9 +15,10 @@ type Resource struct {
 }
 
 type Auth struct {
-	Username  string
-	Password  string
-	Subdomain string
+	Username  	string
+	Password  	string
+	AccessToken string
+	Subdomain 	string
 }
 
 func errHandler(err error) {
@@ -56,7 +57,11 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 
 	req.Header.Add("Content-Type", "application/json")
 
-	req.SetBasicAuth(auth.Username, auth.Password)
+	if auth.AccessToken == "" {
+		req.SetBasicAuth(auth.Username, auth.Password)
+	} else {
+		req.Header.Add("Authorization", "Bearer " + auth.AccessToken)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
