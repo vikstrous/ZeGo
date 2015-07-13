@@ -75,6 +75,6 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 		return nil, err
 	}
 
-	return &Resource{Response: &resp, Raw: string(data)}, nil
+	return &Resource{Response: resp, Raw: string(data)}, nil
 
 }
