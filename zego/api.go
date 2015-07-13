@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -15,10 +16,10 @@ type Resource struct {
 }
 
 type Auth struct {
-	Username  	string
-	Password  	string
+	Username    string
+	Password    string
 	AccessToken string
-	Subdomain 	string
+	Subdomain   string
 }
 
 func errHandler(err error) {
@@ -60,7 +61,7 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 	if auth.AccessToken == "" {
 		req.SetBasicAuth(auth.Username, auth.Password)
 	} else {
-		req.Header.Add("Authorization", "Bearer " + auth.AccessToken)
+		req.SetBasicAuth(url.QueryEscape(auth.Username+"/token"), auth.AccessToken)
 	}
 
 	resp, err := client.Do(req)
