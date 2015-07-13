@@ -60,7 +60,7 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 	if auth.AccessToken == "" {
 		req.SetBasicAuth(auth.Username, auth.Password)
 	} else {
-		req.SetBasicAuth(auth.Username + "/token", auth.AccessToken)
+		req.SetBasicAuth(auth.Username+"/token", auth.AccessToken)
 	}
 
 	resp, err := client.Do(req)
