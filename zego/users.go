@@ -88,6 +88,18 @@ func (a Auth) ShowUser(user_id string) (*SingleUser, error) {
 
 }
 
+func (a Auth) SearchUserByExternalId(external_id string) (*Resource, error) {
+
+	path := "/users/search.json"
+	resource, err := api(a, "GET", path, "?external_id="+external_id)
+	if err != nil {
+		return nil, err
+	}
+
+	return resource, nil
+
+}
+
 func (a Auth) ShowUserRelated(user_id string) (*Resource, error) {
 
 	path := "/users/" + user_id + "/related.json"
