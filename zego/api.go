@@ -2,6 +2,9 @@ package zego
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +15,21 @@ type Resource struct {
 	//Headers     http.Header
 	Response interface{}
 	Raw      string
+}
+
+type Error struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+}
+
+type SingleError struct {
+	Error Error `json:"error"`
+}
+
+type SimpleError struct {
+	Error       string                 `json:"error"`
+	Description string                 `json:"description"`
+	Details     map[string]interface{} `json:"details"`
 }
 
 type Auth struct {
@@ -73,6 +91,20 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		singleError := &SingleError{}
+		err = json.Unmarshal(data, singleError)
+		if err == nil {
+			return nil, errors.New(fmt.Sprintf("%d: %s; %s", resp.StatusCode, singleError.Error.Title, singleError.Error.Message))
+		}
+		simpleError := &SimpleError{}
+		err = json.Unmarshal(data, simpleError)
+		if err == nil {
+			return nil, errors.New(fmt.Sprintf("%d: %s; %s; details: %v", resp.StatusCode, simpleError.Error, simpleError.Description, simpleError.Details))
+		}
+		return nil, errors.New(string(data))
 	}
 
 	return &Resource{Response: resp, Raw: string(data)}, nil
