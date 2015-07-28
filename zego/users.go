@@ -14,15 +14,11 @@ type SingleUser struct {
 	User *User `json:"user"`
 }
 
-type Tags struct {
-	Tags []string `json:"tags"`
-}
-
 type User struct {
 	Id                    uint32         `json:"id,omitempty"`
 	Url                   string         `json:"url,omitempty"`
 	Name                  string         `json:"name,omitempty"`
-	External_id           string         `json:"external_id,omitempty"`
+	ExternalId            string         `json:"external_id,omitempty"`
 	Alias                 string         `json:"alias,omitempty"`
 	Created_at            string         `json:"created_at,omitempty"`
 	Updated_at            string         `json:"updated_at,omitempty"`
@@ -127,23 +123,6 @@ func (a Auth) UpdateUser(user *User) (*User, error) {
 	json.Unmarshal([]byte(resource.Raw), singleUser)
 
 	return singleUser.User, nil
-}
-
-func (a Auth) SetUserTags(user_id uint32, tags []string) (*[]string, error) {
-	path := fmt.Sprintf("/users/%d/tags.json", user_id)
-	bytes, err := json.Marshal(Tags{tags})
-	if err != nil {
-		return nil, err
-	}
-	resource, err := api(a, "POST", path, string(bytes))
-	if err != nil {
-		return nil, err
-	}
-
-	tagsResponse := &Tags{}
-	json.Unmarshal([]byte(resource.Raw), tagsResponse)
-
-	return &tagsResponse.Tags, nil
 }
 
 func (a Auth) DeleteUser(user_id uint32) error {

@@ -97,12 +97,12 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 		singleError := &SingleError{}
 		err = json.Unmarshal(data, singleError)
 		if err == nil {
-			return nil, errors.New(fmt.Sprintf("%d: %s; %s", resp.StatusCode, singleError.Error.Title, singleError.Error.Message))
+			return nil, errors.New(fmt.Sprintf("%d: %s; %s; endpoint: %s", resp.StatusCode, singleError.Error.Title, singleError.Error.Message, path))
 		}
 		simpleError := &SimpleError{}
 		err = json.Unmarshal(data, simpleError)
 		if err == nil {
-			return nil, errors.New(fmt.Sprintf("%d: %s; %s; details: %v", resp.StatusCode, simpleError.Error, simpleError.Description, simpleError.Details))
+			return nil, errors.New(fmt.Sprintf("%d: %s; %s; details: %v; endpoint: %s", resp.StatusCode, simpleError.Error, simpleError.Description, simpleError.Details, path))
 		}
 		return nil, errors.New(string(data))
 	}
