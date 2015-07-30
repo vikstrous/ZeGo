@@ -2,10 +2,12 @@ package zego
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 )
 
 type UserArray struct {
-	Users []User
+	Users []User `json:"users"`
 }
 
 type SingleUser struct {
@@ -13,37 +15,37 @@ type SingleUser struct {
 }
 
 type User struct {
-	Id                    uint32         `json:"id"`
-	Url                   string         `json:"url"`
-	Name                  string         `json:"name"`
-	External_id           string         `json:"external_id"`
-	Alias                 string         `json:"alias"`
-	Created_at            string         `json:"created_at"`
-	Updated_at            string         `json:"updated_at"`
-	Active                bool           `json:"active"`
-	Verified              bool           `json:"verified"`
-	Shared                bool           `json:"shared"`
-	Shared_agent          bool           `json:"shared_agent"`
-	Locale                string         `json:"locale"`
-	Locale_id             uint32         `json:"locale_id"`
-	Time_zone             string         `json:"time_zone"`
-	Last_login_at         string         `json:"last_login_at"`
-	Email                 string         `json:"email"`
-	Phone                 string         `json:"phone"`
-	Signature             string         `json:"signature"`
-	Details               string         `json:"details"`
-	Notes                 string         `json:"notes"`
-	Organization_id       uint32         `json:"organization_id"`
-	Role                  string         `json:"role"`
-	Customer_role_id      uint32         `json:"custom_role_id"`
-	Moderator             bool           `json:"moderator"`
-	Ticket_restriction    string         `json:"ticket_restriction"`
-	Only_private_comments bool           `json:"only_private_comments"`
-	Tags                  []string       `json:"tags"`
-	Restricted_agent      bool           `json:"restricted_agent"`
-	Suspended             bool           `json:"suspended"`
-	Photo                 []*Users_Photo `json:"photo"`
-	User_fields           []*User_Field  `json:"user_fields"`
+	Id                    uint32         `json:"id,omitempty"`
+	Url                   string         `json:"url,omitempty"`
+	Name                  string         `json:"name,omitempty"`
+	ExternalId            string         `json:"external_id,omitempty"`
+	Alias                 string         `json:"alias,omitempty"`
+	Created_at            string         `json:"created_at,omitempty"`
+	Updated_at            string         `json:"updated_at,omitempty"`
+	Active                bool           `json:"active,omitempty"`
+	Verified              bool           `json:"verified,omitempty"`
+	Shared                bool           `json:"shared,omitempty"`
+	Shared_agent          bool           `json:"shared_agent,omitempty"`
+	Locale                string         `json:"locale,omitempty"`
+	Locale_id             uint32         `json:"locale_id,omitempty"`
+	Time_zone             string         `json:"time_zone,omitempty"`
+	Last_login_at         string         `json:"last_login_at,omitempty"`
+	Email                 string         `json:"email,omitempty"`
+	Phone                 string         `json:"phone,omitempty"`
+	Signature             string         `json:"signature,omitempty"`
+	Details               string         `json:"details,omitempty"`
+	Notes                 string         `json:"notes,omitempty"`
+	Organization_id       uint32         `json:"organization_id,omitempty"`
+	Role                  string         `json:"role,omitempty"`
+	Customer_role_id      uint32         `json:"custom_role_id,omitempty"`
+	Moderator             bool           `json:"moderator,omitempty"`
+	Ticket_restriction    string         `json:"ticket_restriction,omitempty"`
+	Only_private_comments bool           `json:"only_private_comments,omitempty"`
+	Tags                  []string       `json:"tags,omitempty"`
+	Restricted_agent      bool           `json:"restricted_agent,omitempty"`
+	Suspended             bool           `json:"suspended,omitempty"`
+	Photo                 []*Users_Photo `json:"photo,omitempty"`
+	User_fields           []*User_Field  `json:"user_fields,omitempty"`
 }
 
 type Users_Photo struct {
@@ -60,20 +62,23 @@ type User_Field struct {
 	UserDate     string  `json:"user_date"`
 }
 
-func (a Auth) ListUsers() (*Resource, error) {
+func parseUsers(resource *Resource) (*[]User, error) {
+	users := &UserArray{}
+	json.Unmarshal([]byte(resource.Raw), users)
+	return &users.Users, nil
+}
 
+func (a Auth) ListUsers() (*[]User, error) {
 	path := "/users.json"
 	resource, err := api(a, "GET", path, "")
 	if err != nil {
 		return nil, err
 	}
 
-	return resource, nil
-
+	return parseUsers(resource)
 }
 
-func (a Auth) ShowUser(user_id string) (*SingleUser, error) {
-
+func (a Auth) ShowUser(user_id string) (*User, error) {
 	UserStruct := &SingleUser{}
 
 	path := "/users/" + user_id + ".json"
@@ -84,20 +89,61 @@ func (a Auth) ShowUser(user_id string) (*SingleUser, error) {
 
 	json.Unmarshal([]byte(resource.Raw), UserStruct)
 
-	return UserStruct, nil
-
+	return UserStruct.User, nil
 }
 
-func (a Auth) SearchUserByExternalId(external_id string) (*Resource, error) {
+func (a Auth) CreateUser(user *User) (*User, error) {
+	path := "/users.json"
+	bytes, err := json.Marshal(SingleUser{user})
+	if err != nil {
+		return nil, err
+	}
+	resource, err := api(a, "POST", path, string(bytes))
+	if err != nil {
+		return nil, err
+	}
+	singleUser := &SingleUser{}
+	json.Unmarshal([]byte(resource.Raw), singleUser)
 
-	path := "/users/search.json"
-	resource, err := api(a, "GET", path, "?external_id="+external_id)
+	return singleUser.User, nil
+}
+
+func (a Auth) UpdateUser(user *User) (*User, error) {
+	path := fmt.Sprintf("/users/%d.json", user.Id)
+	bytes, err := json.Marshal(SingleUser{user})
+	if err != nil {
+		return nil, err
+	}
+	resource, err := api(a, "PUT", path, string(bytes))
 	if err != nil {
 		return nil, err
 	}
 
-	return resource, nil
+	singleUser := &SingleUser{}
+	json.Unmarshal([]byte(resource.Raw), singleUser)
 
+	return singleUser.User, nil
+}
+
+func (a Auth) DeleteUser(user_id uint32) error {
+	path := fmt.Sprintf("/users/%d.json", user_id)
+	_, err := api(a, "DELETE", path, "")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a Auth) SearchUserByExternalId(external_id string) (*[]User, error) {
+	data := url.Values{}
+	data.Set("external_id", external_id)
+	path := fmt.Sprintf("/users/search.json?%s", data.Encode())
+	resource, err := api(a, "GET", path, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return parseUsers(resource)
 }
 
 func (a Auth) ShowUserRelated(user_id string) (*Resource, error) {
