@@ -93,7 +93,8 @@ func api(auth Auth, meth string, path string, params string) (*Resource, error) 
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+	code := resp.StatusCode
+	if code >= 400 && code <= 499 || code >= 500 && code <= 599 {
 		singleError := &SingleError{}
 		err = json.Unmarshal(data, singleError)
 		if err == nil {
